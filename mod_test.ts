@@ -4,7 +4,7 @@ import { exec, OutputMode } from "https://deno.land/x/exec@0.0.5/mod.ts";
 import { command } from "./mod.ts";
 
 await test("simple");
-// await test("parspiler");
+await test("parspiler");
 
 async function test(name: string) {
   Deno.test(name, async () => {
@@ -17,8 +17,8 @@ async function assertTest(name: string) {
     `./test/src/main/kotlin/${name}/parser.llgd`,
     {
       directory: "./test/src/main/kotlin",
-      scannerName: "simple.Scanner",
-      parserName: "simple.Parser",
+      scannerName: `${name}.Scanner`,
+      parserName: `${name}.Parser`,
       force: true,
       verbose: true,
     },

@@ -3,3 +3,5 @@ test/src/main/kotlin/io/littlelanguages/scanpiler/AbstractScanner.kt
 test/src/main/kotlin/io/littlelanguages/scanpiler/Location.kt
 test/src/main/kotlin/io/littlelanguages/scanpiler/ScannerReader.kt
 test/src/main/kotlin/simple/Parser.kt
+test/src/main/kotlin/parspiler/Parser.kt
+test/src/main/kotlin/parspiler/Scanner.kt
