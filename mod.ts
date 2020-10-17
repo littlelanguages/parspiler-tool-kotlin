@@ -9,25 +9,34 @@ import {
   Production,
   translate,
 } from "https://raw.githubusercontent.com/littlelanguages/parspiler/0.0.3/mod.ts";
-import { writeScanner } from "https://raw.githubusercontent.com/littlelanguages/scanpiler-tool-deno/0.2.2/mod.ts";
+import {
+  copyLibrary as copyScannerLibrary,
+  writeScanner,
+} from "https://raw.githubusercontent.com/littlelanguages/scanpiler-tool-kotlin/0.0.2/mod.ts";
 
 export type CommandOptions = {
-  scannerOutputFileName: string | undefined;
-  parserOutputFileName: string | undefined;
+  directory: string | undefined;
+  scannerName: string;
+  parserName: string;
   force: boolean;
   verbose: boolean;
 };
 
-export const denoCommand = async (
+export const command = async (
   fileName: string,
   options: CommandOptions,
 ): Promise<void> => {
-  const parsedFileName = Path.parse(fileName);
+  const [scannerPackageName, scannerName] = splitName(options.scannerName);
+  const scannerDirectory = `${options.directory}/${
+    scannerPackageName.replaceAll(".", "/")
+  }`;
+  const scannerOutputFileName = `${scannerDirectory}/${scannerName}.kt`;
 
-  const scannerOutputFileName = options.scannerOutputFileName ||
-    constructOutputFileName(parsedFileName, "scanner");
-  const parserOutputFileName = options.parserOutputFileName ||
-    constructOutputFileName(parsedFileName, "parser");
+  const [parserPackageName, parserName] = splitName(options.parserName);
+  const parserDirectory = `${options.directory}/${
+    parserPackageName.replaceAll(".", "/")
+  }`;
+  const parserOutputFileName = `${parserDirectory}/${parserName}.kt`;
 
   if (
     options.force ||
@@ -47,9 +56,21 @@ export const denoCommand = async (
       if (options.verbose) {
         console.log(`Writing ${scannerOutputFileName}`);
       }
+      console.log(`scannerOutputFileName: ${scannerOutputFileName}`);
+      console.log(`parserOutputFileName: ${parserOutputFileName}`);
       return writeScanner(
         scannerOutputFileName,
+        scannerPackageName,
         definition.scanner,
+      ).then((_) =>
+        copyScannerLibrary(
+          {
+            directory: options.directory,
+            name: options.scannerName,
+            verbose: options.verbose,
+            force: options.force,
+          },
+        )
       ).then((_) => {
         if (options.verbose) {
           console.log(`Writing ${parserOutputFileName}`);
@@ -604,4 +625,13 @@ const canonicalRelativeTo = (src: string, target: string): string => {
   }
 
   return "./" + result + suffix + targetParse.base;
+};
+
+const splitName = (name: string): [string, string] => {
+  const lastIndexOfPeriod = name.lastIndexOf(".");
+
+  return (lastIndexOfPeriod === -1) ? ["", name] : [
+    name.substr(0, lastIndexOfPeriod),
+    name.substr(lastIndexOfPeriod + 1),
+  ];
 };

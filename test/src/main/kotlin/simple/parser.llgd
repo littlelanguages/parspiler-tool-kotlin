@@ -1,4 +1,4 @@
-uses "./scanner.ll";
+uses "./scanner.llld";
 
 Id: Identifier;
 

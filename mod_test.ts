@@ -1,9 +1,9 @@
 import * as Assert from "./testing/asserts.ts";
 import { exec, OutputMode } from "https://deno.land/x/exec@0.0.5/mod.ts";
 
-import { denoCommand } from "./mod.ts";
+import { command } from "./mod.ts";
 
-// await test("simple");
+await test("simple");
 // await test("parspiler");
 
 async function test(name: string) {
@@ -13,20 +13,21 @@ async function test(name: string) {
 }
 
 async function assertTest(name: string) {
-  await denoCommand(
-    `./test/${name}/parser.pd`,
+  await command(
+    `./test/src/main/kotlin/${name}/parser.llgd`,
     {
-      scannerOutputFileName: undefined,
-      parserOutputFileName: undefined,
+      directory: "./test/src/main/kotlin",
+      scannerName: "simple.Scanner",
+      parserName: "simple.Parser",
       force: true,
       verbose: true,
     },
   );
 
-  const result = await exec(
-    `deno test ./test/${name}/parser_t.ts`,
-    { output: OutputMode.StdOut },
-  );
+  // const result = await exec(
+  //   `deno test ./test/${name}/parser_t.ts`,
+  //   { output: OutputMode.StdOut },
+  // );
 
-  Assert.assertEquals(result.status.code, 0);
+  // Assert.assertEquals(result.status.code, 0);
 }
