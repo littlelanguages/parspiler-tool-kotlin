@@ -3,16 +3,14 @@ import { exec, OutputMode } from "https://deno.land/x/exec@0.0.5/mod.ts";
 
 import { command } from "./mod.ts";
 
-await test("simple");
-await test("parspiler");
+Deno.test("scanpiler-tool-kotlin", async () => {
+  await parspiler("simple");
+  await parspiler("parspiler");
 
-async function test(name: string) {
-  Deno.test(name, async () => {
-    await assertTest(name);
-  });
-}
+  await gradle();
+});
 
-async function assertTest(name: string) {
+async function parspiler(name: string) {
   await command(
     `./test/src/main/kotlin/${name}/parser.llgd`,
     {
@@ -23,11 +21,13 @@ async function assertTest(name: string) {
       verbose: true,
     },
   );
+}
 
-  // const result = await exec(
-  //   `deno test ./test/${name}/parser_t.ts`,
-  //   { output: OutputMode.StdOut },
-  // );
+async function gradle() {
+  const result = await exec(
+    '/bin/bash -c "cd test ; ./gradlew test"',
+    { output: OutputMode.StdOut },
+  );
 
-  // Assert.assertEquals(result.status.code, 0);
+  Assert.assertEquals(result.status.code, 0);
 }

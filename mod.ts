@@ -75,6 +75,7 @@ export const command = async (
         }
         return writeParser(
           parserOutputFileName,
+          parserPackageName,
           canonicalRelativeTo(parserOutputFileName, scannerOutputFileName),
           definition,
         );
@@ -87,10 +88,11 @@ export const command = async (
 
 const writeParser = async (
   fileName: string,
+  packageName: string,
   scannerRelativeName: string,
   definition: Definition,
 ): Promise<void> => {
-  const parserDoc = PP.vcat([
+  const oldParserDoc = PP.vcat([
     'import { Either, left, right } from "https://raw.githubusercontent.com/littlelanguages/deno-lib-data-either/0.1.0/mod.ts";',
     PP.hcat(
       [
@@ -109,6 +111,10 @@ const writeParser = async (
     writeSyntaxError(),
     PP.blank,
     PP.blank,
+  ]);
+
+  const parserDoc = PP.vcat([
+    PP.hsep(["package", packageName]),
   ]);
 
   const writer = await Deno.create(fileName);
