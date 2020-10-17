@@ -26,8 +26,12 @@ async function parspiler(name: string) {
 async function gradle() {
   const result = await exec(
     '/bin/bash -c "cd test ; ./gradlew test"',
-    { output: OutputMode.StdOut },
+    { output: OutputMode.Capture },
   );
+
+  if (result.status.code !== 0) {
+    console.log(result);
+  }
 
   Assert.assertEquals(result.status.code, 0);
 }

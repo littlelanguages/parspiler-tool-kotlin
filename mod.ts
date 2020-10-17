@@ -120,6 +120,8 @@ const writeParser = async (
     PP.blank,
     writeVisitor(definition),
     PP.blank,
+    writeMkParser(definition),
+    PP.blank,
     writeParsingException(),
   ]);
 
@@ -256,11 +258,11 @@ const writeMkParser = (definition: Definition): PP.Doc => {
       case "Identifier":
         const [type, expression] = (definition.nonTerminalNames.has(e.name))
           ? [writeExprType(definition, e), `this.${parseFunctioName(e.name)}()`]
-          : ["Token", `matchToken(TToken.${e.name})`];
+          : ["Token", `matchToken(TToken.T${e.name})`];
 
         return PP.vcat([
           PP.hcat([
-            "const ",
+            "val ",
             variable,
             ": ",
             type,
@@ -278,13 +280,15 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             ),
           ),
           PP.hcat([
-            "const ",
+            "val ",
             variable,
             ": ",
             writeExprType(definition, e),
-            " = [",
+            " = io.littlelanguages.data.Tuple",
+            e.exprs.length.toString(),
+            "(",
             PP.join(e.exprs.map((_, i) => `${variable}${i + 1}`), ", "),
-            "];",
+            ");",
           ]),
           assign(variable),
         ]);
@@ -302,20 +306,24 @@ const writeMkParser = (definition: Definition): PP.Doc => {
                 2,
                 writeExpr(
                   variable,
-                  () => assign(variable),
+                  () =>
+                    assign(
+                      `io.littlelanguages.data.Union${e.exprs.length}${
+                        String.fromCharCode(i + 97)
+                      }(${variable})`,
+                    ),
                   es,
                 ),
               ),
             ])
           )),
-
           "} else {",
           PP.nest(
             2,
             PP.hcat([
-              'throw { tag: "SyntaxError", found: scanner.current(), expected: ',
+              "throw ParsingException(peek(), ",
               writeExpectedTokens(e),
-              "};",
+              ");",
             ]),
           ),
           "}",
@@ -326,11 +334,11 @@ const writeMkParser = (definition: Definition): PP.Doc => {
 
         return PP.vcat([
           PP.hcat([
-            "const ",
+            "val ",
             variable,
-            ": Array<",
+            "= mutableListOf<",
             writeExprType(definition, e.expr),
-            "> = [];",
+            ">();",
           ]),
           PP.blank,
           PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
@@ -339,7 +347,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             PP.vcat([
               writeExpr(
                 tmpVariable,
-                () => PP.hcat([variable, ".push(", tmpVariable, ")"]),
+                () => PP.hcat([variable, ".add(", tmpVariable, ")"]),
                 e.expr,
               ),
               assign(variable),
@@ -353,11 +361,11 @@ const writeMkParser = (definition: Definition): PP.Doc => {
 
         return PP.vcat([
           PP.hcat([
-            "let ",
+            "var ",
             variable,
             ": ",
             writeExprType(definition, e.expr),
-            " | undefined = undefined;",
+            "? = null;",
           ]),
           PP.blank,
           PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
@@ -390,7 +398,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
           : PP.hcat([
             "return visitor.visit",
             visitorName,
-            "(matchToken(TToken.",
+            "(matchToken(TToken.T",
             e.name,
             "));",
           ]);
@@ -410,9 +418,9 @@ const writeMkParser = (definition: Definition): PP.Doc => {
       case "Many":
         return PP.vcat([
           PP.hcat([
-            "const a: Array<",
+            "val a = mutableListOf<",
             writeExprType(definition, e.expr),
-            "> = [];",
+            ">();",
           ]),
           PP.blank,
           PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
@@ -420,7 +428,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             2,
             writeExpr(
               "at",
-              (n) => PP.hcat(["a.push(", n, ")"]),
+              (n) => PP.hcat(["a.add(", n, ")"]),
               e.expr,
             ),
           ),
@@ -430,9 +438,9 @@ const writeMkParser = (definition: Definition): PP.Doc => {
       case "Optional":
         return PP.vcat([
           PP.hcat([
-            "let a: ",
+            "var a: ",
             writeExprType(definition, e),
-            " = undefined;",
+            " = null;",
           ]),
           PP.blank,
           PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
@@ -478,9 +486,9 @@ const writeMkParser = (definition: Definition): PP.Doc => {
         PP.nest(
           2,
           PP.hcat([
-            'throw { tag: "SyntaxError", found: scanner.current(), expected: ',
+            "throw ParsingException(peek(), ",
             writeExpectedTokens(e),
-            "};",
+            ");",
           ]),
         ),
         "}",
@@ -493,13 +501,15 @@ const writeMkParser = (definition: Definition): PP.Doc => {
       definition.productions.map((production) =>
         PP.vcat([
           PP.hcat([
+            "fun ",
             parseFunctioName(production.lhs),
-            ": function (): T_",
+            "(): T_",
             production.lhs,
             " {",
           ]),
           PP.nest(2, writeTopLevelBody(production)),
-          "},",
+          "}",
+          PP.blank,
         ])
       ),
     );
@@ -507,64 +517,81 @@ const writeMkParser = (definition: Definition): PP.Doc => {
   const writeExpectedTokens = (e: Expr): PP.Doc => {
     const f = [...first(definition.firsts, e)].filter((n) => n !== "");
 
-    return PP.hcat(["[", PP.join(f.map((n) => `TToken.${n}`), ", "), "]"]);
+    return PP.hcat(
+      ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
+    );
   };
 
   const writeIsToken = (e: Expr): PP.Doc => {
     const f = [...first(definition.firsts, e)].filter((n) => n !== "");
 
-    return (f.length === 1) ? PP.hcat(["isToken(TToken.", f[0], ")"]) : PP.hcat(
-      ["isTokens([", PP.join(f.map((n) => `TToken.${n}`), ", "), "])"],
-    );
+    return (f.length === 1)
+      ? PP.hcat(["isToken(TToken.T", f[0], ")"])
+      : PP.hcat(
+        ["isTokens(setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), "))"],
+      );
   };
 
   return PP.vcat([
     PP.hcat([
-      "export const mkParser = ",
+      "class Parser",
       gtvs,
-      "(scanner: Scanner, visitor: Visitor",
-      gtvs,
-      ") => {",
+      "(",
     ]),
+    PP.nest(
+      4,
+      PP.vcat([
+        "private val scanner: Scanner,",
+        PP.hcat(["private val visitor: Visitor", gtvs, ") {"]),
+      ]),
+    ),
     PP.nest(
       2,
       PP.vcat([
-        "const matchToken = (ttoken: TToken): Token => {",
+        writeParseFunctions(),
+        PP.blank,
+        "private fun matchToken(tToken: TToken): Token =",
         PP.nest(
           2,
           PP.vcat([
-            "if (isToken(ttoken)) {",
-            PP.nest(2, "return nextToken();"),
-            "} else {",
+            "when (peek().tToken) {",
             PP.nest(
               2,
-              'throw { tag: "SyntaxError", found: scanner.current(), expected: [ttoken] };',
+              PP.vcat([
+                "tToken -> nextToken()",
+                "else -> throw ParsingException(peek(), setOf(tToken))",
+              ]),
             ),
             "}",
           ]),
         ),
-        "}",
         PP.blank,
-        "const isToken = (ttoken: TToken): boolean => currentToken() === ttoken;",
-        PP.blank,
-        "const isTokens = (ttokens: Array<TToken>): boolean => ttokens.includes(currentToken());",
-        PP.blank,
-        "const currentToken = (): TToken => scanner.current()[0];",
-        PP.blank,
-        "const nextToken = (): Token => {",
+        "private fun nextToken(): Token {",
         PP.nest(
           2,
           PP.vcat([
-            "const result = scanner.current();",
-            "scanner.next();",
-            "return result;",
+            "val result =",
+            PP.nest(2, "peek()"),
+            PP.blank,
+            "skipToken()",
+            PP.blank,
+            "return result",
           ]),
         ),
-        "};",
-        PP.blank,
-        "return {",
-        PP.nest(2, writeParseFunctions()),
         "}",
+        PP.blank,
+        "private fun skipToken() {",
+        PP.nest(2, "scanner.next()"),
+        "}",
+        PP.blank,
+        "private fun isToken(tToken: TToken): Boolean =",
+        PP.nest(2, "peek().tToken == tToken"),
+        PP.blank,
+        "private fun isTokens(tTokens: Set<TToken>): Boolean =",
+        PP.nest(2, "tTokens.contains(peek().tToken)"),
+        PP.blank,
+        "private fun peek(): Token =",
+        PP.nest(2, "scanner.current()"),
       ]),
     ),
     "}",
