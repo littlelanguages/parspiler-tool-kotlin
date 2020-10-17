@@ -1,0 +1,8 @@
+test/src/main/kotlin/io/littlelanguages/data/Yammable.kt
+test/src/main/kotlin/io/littlelanguages/scanpiler/AbstractScanner.kt
+test/src/main/kotlin/io/littlelanguages/scanpiler/Location.kt
+test/src/main/kotlin/io/littlelanguages/scanpiler/ScannerReader.kt
+test/src/test/kotlin/backtracking/BacktrackingTests.kt
+test/src/test/kotlin/comments/CommentsTests.kt
+test/src/test/kotlin/scanpiler/ScanpilerTests.kt
+test/src/test/kotlin/simple/SimpleTests.kt
