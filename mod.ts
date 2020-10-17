@@ -586,22 +586,6 @@ const fileDateTime = (name: string): number => {
   }
 };
 
-const constructOutputFileName = (
-  parsedFileName: Path.ParsedPath,
-  name: string,
-): string =>
-  Path.format(
-    Object.assign(
-      {},
-      parsedFileName,
-      {
-        base: `${parsedFileName.name}-${name}.ts`,
-        name: `${parsedFileName.name}-${name}`,
-        ext: ".ts",
-      },
-    ),
-  );
-
 const canonicalRelativeTo = (src: string, target: string): string => {
   const srcParse = Path.parse(src);
   const targetParse = Path.parse(target);
