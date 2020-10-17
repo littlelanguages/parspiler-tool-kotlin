@@ -56,8 +56,6 @@ export const command = async (
       if (options.verbose) {
         console.log(`Writing ${scannerOutputFileName}`);
       }
-      console.log(`scannerOutputFileName: ${scannerOutputFileName}`);
-      console.log(`parserOutputFileName: ${parserOutputFileName}`);
       return writeScanner(
         scannerOutputFileName,
         scannerPackageName,
