@@ -1,0 +1,17 @@
+uses "./scanner.ll";
+
+Id: Identifier;
+
+Ids: {Identifier};
+
+OptionalId: [Ids];
+
+ManyIds : Id Ids;
+
+AlternativeValues : Ids | LiteralInt;
+
+OptionalManyIds: [Id Ids];
+
+ManyAlternativeValues : {Id Ids | LiteralInt};
+
+ManyAlternativeOptionalValues : {Id Ids | [LiteralInt]};

@@ -1,0 +1,19 @@
+uses "scanner.llld";
+
+Definition: 
+    "uses" LiteralString ";"
+    {Production};
+    
+Production: Identifier ":" Expr ";";
+
+Expr: SequenceExpr {"|" SequenceExpr};
+
+SequenceExpr: {Factor};
+
+Factor
+  : LiteralString
+  | "(" Expr ")"
+  | "{" Expr "}"
+  | "[" Expr "]"
+  | Identifier
+  ;

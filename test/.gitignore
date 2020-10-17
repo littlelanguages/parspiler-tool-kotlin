@@ -1,0 +1,10 @@
+.gradle
+.idea
+
+build
+
+# Generated assets
+src/main/kotlin/backtracking/Scanner.kt
+src/main/kotlin/comments/Scanner.kt
+src/main/kotlin/scanpiler/Scanner.kt
+src/main/kotlin/simple/Scanner.kt
