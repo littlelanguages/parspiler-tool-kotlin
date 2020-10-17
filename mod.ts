@@ -76,10 +76,11 @@ export const command = async (
         return writeParser(
           parserOutputFileName,
           parserPackageName,
+          scannerPackageName,
           canonicalRelativeTo(parserOutputFileName, scannerOutputFileName),
           definition,
         );
-      });
+      }).then((_) => copyLibrary(options));
     });
   } else {
     return Promise.resolve();
@@ -89,6 +90,7 @@ export const command = async (
 const writeParser = async (
   fileName: string,
   packageName: string,
+  scannerPackageName: string,
   scannerRelativeName: string,
   definition: Definition,
 ): Promise<void> => {
@@ -114,6 +116,10 @@ const writeParser = async (
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
     PP.blank,
+    PP.hcat(["import ", scannerPackageName, ".Token"]),
+    PP.blank,
+    writeVisitor(definition),
+    PP.blank,
     writeParsingException(),
   ]);
 
@@ -136,20 +142,24 @@ const writeExprType = (definition: Definition, e: Expr): PP.Doc => {
           : PP.text("Token");
       case "Sequence":
         return PP.hcat([
-          "[",
+          "io.littlelanguages.data.Tuple",
+          e.exprs.length.toString(),
+          "<",
           PP.join(e.exprs.map((es) => write(es)), ", "),
-          "]",
+          ">",
         ]);
       case "Alternative":
         return PP.hcat([
-          "(",
-          PP.join(e.exprs.map((es) => write(es)), " | "),
-          ")",
+          "io.littlelanguages.data.Union",
+          e.exprs.length.toString(),
+          "<",
+          PP.join(e.exprs.map((es) => write(es)), ", "),
+          ">",
         ]);
       case "Many":
-        return PP.hcat(["Array<", write(e.expr), ">"]);
+        return PP.hcat(["List<", write(e.expr), ">"]);
       case "Optional":
-        return PP.hcat([write(e.expr), " | undefined"]);
+        return PP.hcat([write(e.expr), "?"]);
     }
   };
 
@@ -175,7 +185,7 @@ const writeVisitor = (definition: Definition): PP.Doc => {
     production: Production,
   ): PP.Doc => {
     const write = (name: string, e: Expr, returnType: string): PP.Doc =>
-      PP.hcat(["visit", name, writeParameters(e), ": T_", returnType, ";"]);
+      PP.hcat(["fun visit", name, writeParameters(e), ": T_", returnType]);
 
     return (production.expr.tag === "Alternative")
       ? PP.vcat(
@@ -188,7 +198,7 @@ const writeVisitor = (definition: Definition): PP.Doc => {
 
   return PP.vcat([
     PP.hcat([
-      "export interface Visitor",
+      "interface Visitor",
       writeGenericTypeVariables(definition),
       " {",
     ]),
@@ -572,6 +582,53 @@ const writeParsingException = (): PP.Doc =>
       ]),
     ),
   ]);
+
+export const copyLibrary = async (
+  options: CommandOptions,
+): Promise<void> => {
+  const copyFile = async (
+    srcName: string,
+    targetName: string,
+  ): Promise<void> => {
+    const outputFileName = `${options.directory}/${targetName}`;
+
+    if (options.force || fileDateTime(outputFileName) === 0) {
+      const srcFileName = `${Path.dirname(import.meta.url)}/${srcName}`;
+
+      console.log(`Copy ${srcName}`);
+
+      return Deno.mkdir(Path.dirname(outputFileName), { recursive: true })
+        .then((_) =>
+          (srcFileName.startsWith("file://"))
+            ? Deno.copyFile(
+              srcFileName.substr(7),
+              outputFileName,
+            )
+            : srcFileName.startsWith("http://") ||
+                srcFileName.startsWith("https://")
+            ? fetch(srcFileName).then((response) => response.text()).then((
+              t: string,
+            ) => Deno.writeFile(outputFileName, new TextEncoder().encode(t)))
+            : Deno.copyFile(
+              srcFileName,
+              outputFileName,
+            )
+        );
+    } else {
+      return Promise.resolve();
+    }
+  };
+
+  await copyFile(
+    "lib/kotlin/Tuple.kt",
+    "io/littlelanguages/data/Tuple.kt",
+  );
+
+  return await copyFile(
+    "lib/kotlin/Union.kt",
+    "io/littlelanguages/data/Union.kt",
+  );
+};
 
 const parseFunctioName = (name: string): string =>
   `${name.slice(0, 1).toLowerCase()}${name.slice(1)}`;
