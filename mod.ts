@@ -108,13 +108,13 @@ const writeParser = async (
     PP.blank,
     writeMkParser(definition),
     PP.blank,
-    writeSyntaxError(),
-    PP.blank,
     PP.blank,
   ]);
 
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
+    PP.blank,
+    writeParsingException(),
   ]);
 
   const writer = await Deno.create(fileName);
@@ -561,18 +561,16 @@ const writeMkParser = (definition: Definition): PP.Doc => {
   ]);
 };
 
-const writeSyntaxError = (): PP.Doc =>
+const writeParsingException = (): PP.Doc =>
   PP.vcat([
-    "export type SyntaxError = {",
+    "class ParsingException(",
     PP.nest(
       2,
       PP.vcat([
-        'tag: "SyntaxError";',
-        "found: Token;",
-        "expected: Array<TToken>;",
+        "val found: Token,",
+        "val expected: Set<TToken>) : Exception()",
       ]),
     ),
-    "};",
   ]);
 
 const parseFunctioName = (name: string): string =>
