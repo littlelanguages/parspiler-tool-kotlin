@@ -7,7 +7,7 @@ import range
 import io.littlelanguages.scanpiler.LocationCoordinate
 import java.io.StringReader
 
-class SimpleTests : StringSpec({
+class ScannerTests : StringSpec({
     "empty stream returns an EOS as token" {
         tokens("") shouldBe listOf(
                 Token(TToken.TEOS, LocationCoordinate(0, 1, 1), "")

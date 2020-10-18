@@ -8,7 +8,7 @@ interface Union2<A, B> {
     fun b(): B
 }
 
-class Union2a<A, B>(private val a: A) : Union2<A, B> {
+data class Union2a<A, B>(private val a: A) : Union2<A, B> {
     override fun isA(): Boolean = true
     override fun isB(): Boolean = false
 
@@ -19,7 +19,7 @@ class Union2a<A, B>(private val a: A) : Union2<A, B> {
     }
 }
 
-class Union2b<A, B>(private val b: B) : Union2<A, B> {
+data class Union2b<A, B>(private val b: B) : Union2<A, B> {
     override fun isA(): Boolean = false
     override fun isB(): Boolean = true
 
@@ -40,7 +40,7 @@ interface Union3<A, B, C> {
     fun c(): C
 }
 
-class Union3a<A, B, C>(private val a: A) : Union3<A, B, C> {
+data class Union3a<A, B, C>(private val a: A) : Union3<A, B, C> {
     override fun isA(): Boolean = true
     override fun isB(): Boolean = false
     override fun isC(): Boolean = false
@@ -56,7 +56,7 @@ class Union3a<A, B, C>(private val a: A) : Union3<A, B, C> {
     }
 }
 
-class Union3b<A, B, C>(private val b: B) : Union3<A, B, C> {
+data class Union3b<A, B, C>(private val b: B) : Union3<A, B, C> {
     override fun isA(): Boolean = false
     override fun isB(): Boolean = true
     override fun isC(): Boolean = false
@@ -72,7 +72,7 @@ class Union3b<A, B, C>(private val b: B) : Union3<A, B, C> {
     }
 }
 
-class Union3c<A, B, C>(private val c: C) : Union3<A, B, C> {
+data class Union3c<A, B, C>(private val c: C) : Union3<A, B, C> {
     override fun isA(): Boolean = false
     override fun isB(): Boolean = false
     override fun isC(): Boolean = true
