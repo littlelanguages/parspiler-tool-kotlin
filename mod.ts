@@ -199,7 +199,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
     switch (e.tag) {
       case "Identifier":
         const [type, expression] = (definition.nonTerminalNames.has(e.name))
-          ? [writeExprType(definition, e), `this.${parseFunctioName(e.name)}()`]
+          ? [writeExprType(definition, e), `${parseFunctioName(e.name)}()`]
           : ["Token", `matchToken(TToken.T${e.name})`];
 
         return PP.vcat([
@@ -235,36 +235,42 @@ const writeMkParser = (definition: Definition): PP.Doc => {
         ]);
       case "Alternative":
         return PP.vcat([
-          PP.vcat(e.exprs.map((es, i) =>
-            PP.vcat([
-              PP.hcat([
-                (i === 0) ? "if" : "} else if",
-                " (",
-                writeIsToken(es),
-                ") {",
-              ]),
-              PP.nest(
-                2,
-                writeExpr(
-                  variable,
-                  () =>
-                    assign(
-                      `io.littlelanguages.data.Union${e.exprs.length}${
-                        String.fromCharCode(i + 97)
-                      }(${variable})`,
-                    ),
-                  es,
-                ),
-              ),
-            ])
-          )),
-          "} else {",
+          "when {",
           PP.nest(
             2,
-            PP.hcat([
-              "throw ParsingException(peek(), ",
-              writeExpectedTokens(e),
-              ")",
+            PP.vcat([
+              PP.vcat(e.exprs.map((es, i) =>
+                PP.vcat([
+                  PP.hcat([
+                    writeIsToken(es),
+                    "-> {",
+                  ]),
+                  PP.nest(
+                    2,
+                    writeExpr(
+                      variable,
+                      () =>
+                        assign(
+                          `io.littlelanguages.data.Union${e.exprs.length}${
+                            String.fromCharCode(i + 97)
+                          }(${variable})`,
+                        ),
+                      es,
+                    ),
+                  ),
+                  "}",
+                ])
+              )),
+              "else -> {",
+              PP.nest(
+                2,
+                PP.hcat([
+                  "throw ParsingException(peek(), ",
+                  writeExpectedTokens(e),
+                  ")",
+                ]),
+              ),
+              "}",
             ]),
           ),
           "}",
@@ -332,7 +338,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
           ? PP.hcat([
             "return visitor.visit",
             visitorName,
-            "(this.",
+            "(",
             parseFunctioName(e.name),
             "())",
           ])
@@ -406,30 +412,36 @@ const writeMkParser = (definition: Definition): PP.Doc => {
 
     return (e.tag === "Alternative")
       ? PP.vcat([
-        PP.vcat(e.exprs.map((es, i) =>
-          PP.vcat([
-            PP.hcat([
-              (i === 0) ? "if" : "} else if",
-              " (",
-              writeIsToken(es),
-              ") {",
-            ]),
-            PP.nest(
-              2,
-              writeTopLevelExpresseion(
-                `${production.lhs}${i + 1}`,
-                es,
-              ),
-            ),
-          ])
-        )),
-        "} else {",
+        "when {",
         PP.nest(
           2,
-          PP.hcat([
-            "throw ParsingException(peek(), ",
-            writeExpectedTokens(e),
-            ")",
+          PP.vcat([
+            PP.vcat(e.exprs.map((es, i) =>
+              PP.vcat([
+                PP.hcat([
+                  writeIsToken(es),
+                  " -> {",
+                ]),
+                PP.nest(
+                  2,
+                  writeTopLevelExpresseion(
+                    `${production.lhs}${i + 1}`,
+                    es,
+                  ),
+                ),
+                "}",
+              ])
+            )),
+            "else -> {",
+            PP.nest(
+              2,
+              PP.hcat([
+                "throw ParsingException(peek(), ",
+                writeExpectedTokens(e),
+                ")",
+              ]),
+            ),
+            "}",
           ]),
         ),
         "}",
