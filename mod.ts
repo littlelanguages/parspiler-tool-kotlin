@@ -17,7 +17,6 @@ import {
   isEqual,
   setOf,
 } from "https://raw.githubusercontent.com/littlelanguages/deno-lib-data-set/0.1.0/mod.ts";
-import { OptionalRegEx } from "https://raw.githubusercontent.com/littlelanguages/scanpiler/0.2.2/la/definition.ts";
 
 export type CommandOptions = {
   directory: string | undefined;
