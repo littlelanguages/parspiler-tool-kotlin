@@ -6,6 +6,8 @@ import io.littlelanguages.data.Tuple2
 import io.littlelanguages.data.Union2
 import io.littlelanguages.data.Union2a
 import io.littlelanguages.data.Union2b
+import simple.scanner.Scanner
+import simple.scanner.Token
 import java.io.StringReader
 
 class ParserTests : StringSpec({
@@ -50,9 +52,9 @@ class ParserTests : StringSpec({
         mkParser("hello 123 world 456 war of the worlds").manyAlternativeValues() shouldBe listOf(
                 Union2a<String, Int>("hello-"),
                 Union2b<String, Int>(123),
-                Union2a<String, Int>("world-"),
-                Union2b<String, Int>(456),
-                Union2a<String, Int>("war-of, the, worlds")
+                Union2a("world-"),
+                Union2b(456),
+                Union2a("war-of, the, worlds")
         )
     }
 
@@ -63,9 +65,9 @@ class ParserTests : StringSpec({
         mkParser("hello 123 world 456 war of the worlds").manyAlternativeOptionalValues() shouldBe listOf(
                 Union2a<String, Int>("hello-"),
                 Union2b<String, Int>(123),
-                Union2a<String, Int>("world-"),
-                Union2b<String, Int>(456),
-                Union2a<String, Int>("war-of, the, worlds")
+                Union2a("world-"),
+                Union2b(456),
+                Union2a("war-of, the, worlds")
         )
     }
 })
@@ -105,9 +107,8 @@ class TestVisitor : Visitor<
             a: List<Union2<Tuple2<String, String>, Token?>>): List<Union2<String, Int>> =
             a.map {
                 when {
-//                    it == null -> Union2a<String, Int>("<undefined>")
-                    it.isA() -> Union2a<String, Int>("${it.a().a}-${it.a().b}")
-                    it.b() == null -> Union2a<String, Int>("<undefined>")
+                    it.isA() -> Union2a("${it.a().a}-${it.a().b}")
+                    it.b() == null -> Union2a("<undefined>")
                     else -> {
                         val v = it.b()
 

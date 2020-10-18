@@ -17,11 +17,12 @@ import {
   isEqual,
   setOf,
 } from "https://raw.githubusercontent.com/littlelanguages/deno-lib-data-set/0.1.0/mod.ts";
+import { OptionalRegEx } from "https://raw.githubusercontent.com/littlelanguages/scanpiler/0.2.2/la/definition.ts";
 
 export type CommandOptions = {
   directory: string | undefined;
-  scannerName: string;
-  parserName: string;
+  scannerPackage: string | undefined;
+  parserPackage: string;
   force: boolean;
   verbose: boolean;
 };
@@ -30,17 +31,16 @@ export const command = async (
   fileName: string,
   options: CommandOptions,
 ): Promise<void> => {
-  const [scannerPackageName, scannerName] = splitName(options.scannerName);
+  const scannerPackageName = options.scannerPackage || options.parserPackage;
   const scannerDirectory = `${options.directory}/${
     scannerPackageName.replaceAll(".", "/")
   }`;
-  const scannerOutputFileName = `${scannerDirectory}/${scannerName}.kt`;
+  const scannerOutputFileName = `${scannerDirectory}/Scanner.kt`;
 
-  const [parserPackageName, parserName] = splitName(options.parserName);
   const parserDirectory = `${options.directory}/${
-    parserPackageName.replaceAll(".", "/")
+    options.parserPackage.replaceAll(".", "/")
   }`;
-  const parserOutputFileName = `${parserDirectory}/${parserName}.kt`;
+  const parserOutputFileName = `${parserDirectory}/Parser.kt`;
 
   if (
     options.force ||
@@ -60,15 +60,17 @@ export const command = async (
       if (options.verbose) {
         console.log(`Writing ${scannerOutputFileName}`);
       }
-      return writeScanner(
-        scannerOutputFileName,
-        scannerPackageName,
-        definition.scanner,
+      return Deno.mkdir(scannerDirectory, { recursive: true }).then((_) =>
+        writeScanner(
+          scannerOutputFileName,
+          scannerPackageName,
+          definition.scanner,
+        )
       ).then((_) =>
         copyScannerLibrary(
           {
             directory: options.directory,
-            name: options.scannerName,
+            name: scannerPackageName,
             verbose: options.verbose,
             force: options.force,
           },
@@ -79,7 +81,7 @@ export const command = async (
         }
         return writeParser(
           parserOutputFileName,
-          parserPackageName,
+          options.parserPackage,
           scannerPackageName,
           definition,
         );
@@ -100,8 +102,12 @@ const writeParser = async (
 
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
-    PP.blank,
-    PP.hcat(["import ", scannerPackageName, ".Token"]),
+    scannerPackageName === packageName ? PP.empty : PP.vcat([
+      PP.blank,
+      PP.hcat(["import ", scannerPackageName, ".Scanner"]),
+      PP.hcat(["import ", scannerPackageName, ".Token"]),
+      PP.hcat(["import ", scannerPackageName, ".TToken"]),
+    ]),
     PP.blank,
     writeVisitor(definition),
     PP.blank,
@@ -663,9 +669,9 @@ const mkTokenSetCache = (): TokenSetCache => ({
   name: function (names: Array<string>): string {
     const setOfNames: Set<string> = setOf(names);
 
-    for (const v of this.values) {
-      if (isEqual(v[0], setOfNames)) {
-        return v[1];
+    for (const [s, n] of this.values) {
+      if (isEqual(s, setOfNames)) {
+        return n;
       }
     }
 

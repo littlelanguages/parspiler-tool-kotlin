@@ -7,3 +7,5 @@ test/src/main/kotlin/parspiler/Parser.kt
 test/src/main/kotlin/parspiler/Scanner.kt
 test/src/main/kotlin/io/littlelanguages/data/Tuple.kt
 test/src/main/kotlin/io/littlelanguages/data/Union.kt
+test/src/main/kotlin/parspiler/scanner/Scanner.kt
+test/src/main/kotlin/simple/scanner/Scanner.kt

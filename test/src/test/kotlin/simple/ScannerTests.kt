@@ -3,8 +3,11 @@ package simple
 import abstractTokens
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import range
 import io.littlelanguages.scanpiler.LocationCoordinate
+import range
+import simple.scanner.Scanner
+import simple.scanner.TToken
+import simple.scanner.Token
 import java.io.StringReader
 
 class ScannerTests : StringSpec({

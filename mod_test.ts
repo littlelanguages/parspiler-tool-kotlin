@@ -15,8 +15,8 @@ async function parspiler(name: string) {
     `./test/src/main/kotlin/${name}/parser.llgd`,
     {
       directory: "./test/src/main/kotlin",
-      scannerName: `${name}.Scanner`,
-      parserName: `${name}.Parser`,
+      scannerPackage: `${name}.scanner`,
+      parserPackage: `${name}`,
       force: true,
       verbose: true,
     },
