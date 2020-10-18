@@ -96,7 +96,7 @@ const writeParser = async (
   scannerPackageName: string,
   definition: Definition,
 ): Promise<void> => {
-  const sc = setCache();
+  const sc = mkTokenSetCache();
 
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
@@ -105,8 +105,8 @@ const writeParser = async (
     PP.blank,
     writeVisitor(definition),
     PP.blank,
-    writeMkParser(definition, sc),
-    writeSetCache(sc),
+    writeParserClass(definition, sc),
+    writeTokenCacheConstants(sc),
     PP.blank,
     writeParsingException(),
   ]);
@@ -195,7 +195,10 @@ const writeVisitor = (definition: Definition): PP.Doc => {
   ]);
 };
 
-const writeMkParser = (definition: Definition, sc: SetCache): PP.Doc => {
+const writeParserClass = (
+  definition: Definition,
+  sc: TokenSetCache,
+): PP.Doc => {
   const gtvs = writeGenericTypeVariables(definition);
 
   const writeExpr = (
@@ -474,24 +477,18 @@ const writeMkParser = (definition: Definition, sc: SetCache): PP.Doc => {
       ),
     );
 
-  const writeExpectedTokens = (e: Expr, sc: SetCache): PP.Doc => {
-    const f = [...first(definition.firsts, e)].filter((n) => n !== "");
+  const writeExpectedTokens = (e: Expr, sc: TokenSetCache): PP.Doc =>
+    PP.text(
+      sc.name([...first(definition.firsts, e)].filter((n) => n !== "")),
+    );
 
-    return PP.text(sc.setName(f));
-    // PP.hcat(
-    // ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
-    // ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
-    // );
-  };
-
-  const writeIsToken = (e: Expr, sc: SetCache): PP.Doc => {
+  const writeIsToken = (e: Expr, sc: TokenSetCache): PP.Doc => {
     const f = [...first(definition.firsts, e)].filter((n) => n !== "");
 
     return (f.length === 1)
       ? PP.hcat(["isToken(TToken.T", f[0], ")"])
       : PP.hcat(
-        ["isTokens(", sc.setName(f), ")"],
-        // ["isTokens(setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), "))"],
+        ["isTokens(", sc.name(f), ")"],
       );
   };
 
@@ -561,7 +558,7 @@ const writeMkParser = (definition: Definition, sc: SetCache): PP.Doc => {
   ]);
 };
 
-const writeSetCache = (sc: SetCache): PP.Doc =>
+const writeTokenCacheConstants = (sc: TokenSetCache): PP.Doc =>
   PP.vcat(sc.values.map(([s, n]) =>
     PP.vcat([
       PP.blank,
@@ -574,11 +571,6 @@ const writeSetCache = (sc: SetCache): PP.Doc =>
       ]),
     ])
   ));
-
-// PP.hcat(
-// ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
-// ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
-// );
 
 const writeParsingException = (): PP.Doc =>
   PP.vcat([
@@ -659,16 +651,16 @@ const splitName = (name: string): [string, string] => {
   ];
 };
 
-type SetCache = {
+type TokenSetCache = {
   counter: number;
   values: Array<[Set<string>, string]>;
-  setName: (names: Array<string>) => string;
+  name: (names: Array<string>) => string;
 };
 
-const setCache = (): SetCache => ({
+const mkTokenSetCache = (): TokenSetCache => ({
   counter: 0,
   values: [],
-  setName: function (names: Array<string>): string {
+  name: function (names: Array<string>): string {
     const setOfNames: Set<string> = setOf(names);
 
     for (const v of this.values) {
