@@ -4,6 +4,7 @@ import { exec, OutputMode } from "https://deno.land/x/exec@0.0.5/mod.ts";
 import { command } from "./mod.ts";
 
 Deno.test("scanpiler-tool-kotlin", async () => {
+  await parspiler("alternative");
   await parspiler("simple");
   await parspiler("parspiler");
 

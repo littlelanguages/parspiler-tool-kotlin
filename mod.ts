@@ -250,7 +250,9 @@ const writeParserClass = (
         ]);
       case "Alternative":
         return PP.vcat([
-          "when {",
+          PP.hcat(
+            ["val ", variable, ": ", writeExprType(definition, e), " = when {"],
+          ),
           PP.nest(
             2,
             PP.vcat([
@@ -262,16 +264,21 @@ const writeParserClass = (
                   ]),
                   PP.nest(
                     2,
-                    writeExpr(
-                      variable,
-                      () =>
-                        assign(
-                          `io.littlelanguages.data.Union${e.exprs.length}${
-                            String.fromCharCode(i + 97)
-                          }(${variable})`,
-                        ),
-                      es,
-                    ),
+                    PP.vcat([
+                      writeExpr(
+                        `${variable}${i}`,
+                        () => PP.blank,
+                        es,
+                      ),
+                      PP.hcat([
+                        "io.littlelanguages.data.Union",
+                        e.exprs.length.toString(),
+                        String.fromCharCode(i + 97),
+                        "(",
+                        `${variable}${i}`,
+                        ")",
+                      ]),
+                    ]),
                   ),
                   "}",
                 ])
@@ -289,6 +296,7 @@ const writeParserClass = (
             ]),
           ),
           "}",
+          assign(variable),
         ]);
 
       case "Many": {

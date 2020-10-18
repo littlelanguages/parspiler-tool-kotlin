@@ -1,0 +1,4 @@
+uses "./scanner.llld";
+
+
+statement: ("const" "var" | "let") Identifier "=" LiteralInt ";";
