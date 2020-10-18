@@ -13,6 +13,10 @@ import {
   copyLibrary as copyScannerLibrary,
   writeScanner,
 } from "https://raw.githubusercontent.com/littlelanguages/scanpiler-tool-kotlin/0.0.2/mod.ts";
+import {
+  isEqual,
+  setOf,
+} from "https://raw.githubusercontent.com/littlelanguages/deno-lib-data-set/0.1.0/mod.ts";
 
 export type CommandOptions = {
   directory: string | undefined;
@@ -92,6 +96,8 @@ const writeParser = async (
   scannerPackageName: string,
   definition: Definition,
 ): Promise<void> => {
+  const sc = setCache();
+
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
     PP.blank,
@@ -99,7 +105,8 @@ const writeParser = async (
     PP.blank,
     writeVisitor(definition),
     PP.blank,
-    writeMkParser(definition),
+    writeMkParser(definition, sc),
+    writeSetCache(sc),
     PP.blank,
     writeParsingException(),
   ]);
@@ -188,7 +195,7 @@ const writeVisitor = (definition: Definition): PP.Doc => {
   ]);
 };
 
-const writeMkParser = (definition: Definition): PP.Doc => {
+const writeMkParser = (definition: Definition, sc: SetCache): PP.Doc => {
   const gtvs = writeGenericTypeVariables(definition);
 
   const writeExpr = (
@@ -242,7 +249,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
               PP.vcat(e.exprs.map((es, i) =>
                 PP.vcat([
                   PP.hcat([
-                    writeIsToken(es),
+                    writeIsToken(es, sc),
                     "-> {",
                   ]),
                   PP.nest(
@@ -266,7 +273,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
                 2,
                 PP.hcat([
                   "throw ParsingException(peek(), ",
-                  writeExpectedTokens(e),
+                  writeExpectedTokens(e, sc),
                   ")",
                 ]),
               ),
@@ -288,7 +295,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             ">()",
           ]),
           PP.blank,
-          PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
+          PP.hcat(["while (", writeIsToken(e.expr, sc), ") {"]),
           PP.nest(
             2,
             PP.vcat([
@@ -315,7 +322,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             "? = null",
           ]),
           PP.blank,
-          PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
+          PP.hcat(["if (", writeIsToken(e.expr, sc), ") {"]),
           PP.nest(
             2,
             writeExpr(
@@ -370,7 +377,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             ">()",
           ]),
           PP.blank,
-          PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
+          PP.hcat(["while (", writeIsToken(e.expr, sc), ") {"]),
           PP.nest(
             2,
             writeExpr(
@@ -390,7 +397,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             " = null",
           ]),
           PP.blank,
-          PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
+          PP.hcat(["if (", writeIsToken(e.expr, sc), ") {"]),
           PP.nest(
             2,
             writeExpr("at", (ns) => PP.hcat(["a = ", ns]), e.expr),
@@ -419,7 +426,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             PP.vcat(e.exprs.map((es, i) =>
               PP.vcat([
                 PP.hcat([
-                  writeIsToken(es),
+                  writeIsToken(es, sc),
                   " -> {",
                 ]),
                 PP.nest(
@@ -437,7 +444,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
               2,
               PP.hcat([
                 "throw ParsingException(peek(), ",
-                writeExpectedTokens(e),
+                writeExpectedTokens(e, sc),
                 ")",
               ]),
             ),
@@ -467,21 +474,24 @@ const writeMkParser = (definition: Definition): PP.Doc => {
       ),
     );
 
-  const writeExpectedTokens = (e: Expr): PP.Doc => {
+  const writeExpectedTokens = (e: Expr, sc: SetCache): PP.Doc => {
     const f = [...first(definition.firsts, e)].filter((n) => n !== "");
 
-    return PP.hcat(
-      ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
-    );
+    return PP.text(sc.setName(f));
+    // PP.hcat(
+    // ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
+    // ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
+    // );
   };
 
-  const writeIsToken = (e: Expr): PP.Doc => {
+  const writeIsToken = (e: Expr, sc: SetCache): PP.Doc => {
     const f = [...first(definition.firsts, e)].filter((n) => n !== "");
 
     return (f.length === 1)
       ? PP.hcat(["isToken(TToken.T", f[0], ")"])
       : PP.hcat(
-        ["isTokens(setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), "))"],
+        ["isTokens(", sc.setName(f), ")"],
+        // ["isTokens(setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), "))"],
       );
   };
 
@@ -550,6 +560,25 @@ const writeMkParser = (definition: Definition): PP.Doc => {
     "}",
   ]);
 };
+
+const writeSetCache = (sc: SetCache): PP.Doc =>
+  PP.vcat(sc.values.map(([s, n]) =>
+    PP.vcat([
+      PP.blank,
+      PP.hcat([
+        "private val ",
+        n,
+        " = setOf(",
+        PP.join([...s].map((n) => `TToken.T${n}`), ", "),
+        ")",
+      ]),
+    ])
+  ));
+
+// PP.hcat(
+// ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
+// ["setOf(", PP.join(f.map((n) => `TToken.T${n}`), ", "), ")"],
+// );
 
 const writeParsingException = (): PP.Doc =>
   PP.vcat([
@@ -629,3 +658,29 @@ const splitName = (name: string): [string, string] => {
     name.substr(lastIndexOfPeriod + 1),
   ];
 };
+
+type SetCache = {
+  counter: number;
+  values: Array<[Set<string>, string]>;
+  setName: (names: Array<string>) => string;
+};
+
+const setCache = (): SetCache => ({
+  counter: 0,
+  values: [],
+  setName: function (names: Array<string>): string {
+    const setOfNames: Set<string> = setOf(names);
+
+    for (const v of this.values) {
+      if (isEqual(v[0], setOfNames)) {
+        return v[1];
+      }
+    }
+
+    this.counter += 1;
+    const name = `set${this.counter}`;
+    this.values.push([setOfNames, name]);
+
+    return name;
+  },
+});
