@@ -210,7 +210,6 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             type,
             " = ",
             expression,
-            ";",
           ]),
           assign(variable),
         ]);
@@ -230,7 +229,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             e.exprs.length.toString(),
             "(",
             PP.join(e.exprs.map((_, i) => `${variable}${i + 1}`), ", "),
-            ");",
+            ")",
           ]),
           assign(variable),
         ]);
@@ -265,7 +264,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             PP.hcat([
               "throw ParsingException(peek(), ",
               writeExpectedTokens(e),
-              ");",
+              ")",
             ]),
           ),
           "}",
@@ -280,7 +279,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             variable,
             "= mutableListOf<",
             writeExprType(definition, e.expr),
-            ">();",
+            ">()",
           ]),
           PP.blank,
           PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
@@ -307,7 +306,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             variable,
             ": ",
             writeExprType(definition, e.expr),
-            "? = null;",
+            "? = null",
           ]),
           PP.blank,
           PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
@@ -315,7 +314,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             2,
             writeExpr(
               tmpVariable,
-              () => PP.hcat([variable, " = ", tmpVariable, ";"]),
+              () => PP.hcat([variable, " = ", tmpVariable]),
               e.expr,
             ),
           ),
@@ -335,14 +334,14 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             visitorName,
             "(this.",
             parseFunctioName(e.name),
-            "());",
+            "())",
           ])
           : PP.hcat([
             "return visitor.visit",
             visitorName,
             "(matchToken(TToken.T",
             e.name,
-            "));",
+            "))",
           ]);
       case "Sequence":
         return PP.vcat([
@@ -354,7 +353,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             visitorName,
             "(",
             PP.join(e.exprs.map((_, i) => `a${i + 1}`), ", "),
-            ");",
+            ")",
           ]),
         ]);
       case "Many":
@@ -362,7 +361,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
           PP.hcat([
             "val a = mutableListOf<",
             writeExprType(definition, e.expr),
-            ">();",
+            ">()",
           ]),
           PP.blank,
           PP.hcat(["while (", writeIsToken(e.expr), ") {"]),
@@ -375,23 +374,23 @@ const writeMkParser = (definition: Definition): PP.Doc => {
             ),
           ),
           "}",
-          PP.hcat(["return visitor.visit", visitorName, "(a);"]),
+          PP.hcat(["return visitor.visit", visitorName, "(a)"]),
         ]);
       case "Optional":
         return PP.vcat([
           PP.hcat([
             "var a: ",
             writeExprType(definition, e),
-            " = null;",
+            " = null",
           ]),
           PP.blank,
           PP.hcat(["if (", writeIsToken(e.expr), ") {"]),
           PP.nest(
             2,
-            writeExpr("at", (ns) => PP.hcat(["a = ", ns, ";"]), e.expr),
+            writeExpr("at", (ns) => PP.hcat(["a = ", ns]), e.expr),
           ),
           "}",
-          PP.hcat(["return visitor.visit", visitorName, "(a);"]),
+          PP.hcat(["return visitor.visit", visitorName, "(a)"]),
         ]);
       default:
         throw {
@@ -430,7 +429,7 @@ const writeMkParser = (definition: Definition): PP.Doc => {
           PP.hcat([
             "throw ParsingException(peek(), ",
             writeExpectedTokens(e),
-            ");",
+            ")",
           ]),
         ),
         "}",
