@@ -77,7 +77,6 @@ export const command = async (
           parserOutputFileName,
           parserPackageName,
           scannerPackageName,
-          canonicalRelativeTo(parserOutputFileName, scannerOutputFileName),
           definition,
         );
       }).then((_) => copyLibrary(options));
@@ -91,28 +90,8 @@ const writeParser = async (
   fileName: string,
   packageName: string,
   scannerPackageName: string,
-  scannerRelativeName: string,
   definition: Definition,
 ): Promise<void> => {
-  const oldParserDoc = PP.vcat([
-    'import { Either, left, right } from "https://raw.githubusercontent.com/littlelanguages/deno-lib-data-either/0.1.0/mod.ts";',
-    PP.hcat(
-      [
-        'import { mkScanner, Scanner, Token, TToken } from "',
-        scannerRelativeName,
-        '";',
-      ],
-    ),
-    PP.blank,
-    writeVisitor(definition),
-    PP.blank,
-    writeExportedParser(definition),
-    PP.blank,
-    writeMkParser(definition),
-    PP.blank,
-    PP.blank,
-  ]);
-
   const parserDoc = PP.vcat([
     PP.hsep(["package", packageName]),
     PP.blank,
@@ -205,43 +184,6 @@ const writeVisitor = (definition: Definition): PP.Doc => {
       " {",
     ]),
     PP.nest(2, PP.vcat(definition.productions.map((p) => writeProduction(p)))),
-    "}",
-  ]);
-};
-
-const writeExportedParser = (definition: Definition): PP.Doc => {
-  const gtvs = writeGenericTypeVariables(definition);
-  const name = definition.productions[0].lhs;
-
-  return PP.vcat([
-    PP.hcat([
-      "export const parse",
-      name,
-      " = ",
-      gtvs,
-      "(input: string, visitor: Visitor",
-      gtvs,
-      "): Either<SyntaxError, T_",
-      name,
-      "> => {",
-    ]),
-    PP.nest(
-      2,
-      PP.vcat([
-        "try {",
-        PP.nest(
-          2,
-          PP.hcat([
-            "return right(mkParser(mkScanner(input), visitor).",
-            parseFunctioName(name),
-            "());",
-          ]),
-        ),
-        "} catch(e) {",
-        PP.nest(2, "return left(e);"),
-        "}",
-      ]),
-    ),
     "}",
   ]);
 };
@@ -666,35 +608,6 @@ const fileDateTime = (name: string): number => {
   } catch (_) {
     return 0;
   }
-};
-
-const canonicalRelativeTo = (src: string, target: string): string => {
-  const srcParse = Path.parse(src);
-  const targetParse = Path.parse(target);
-
-  const srcParsePath = srcParse.dir + "/";
-  const targetParsePath = targetParse.dir + "/";
-
-  const len = Math.max(srcParsePath.length, targetParsePath.length);
-  let lp = 0;
-  while (lp < len && srcParsePath[lp] === targetParsePath[lp]) {
-    lp += 1;
-  }
-  while (lp > 0 && srcParsePath[lp] !== "/") {
-    lp -= 1;
-  }
-  const suffix = targetParsePath.substr(lp + 1);
-
-  let result = "";
-  lp += 1;
-  while (lp < srcParsePath.length) {
-    if (srcParsePath[lp] === "/") {
-      result = result + "../";
-    }
-    lp += 1;
-  }
-
-  return "./" + result + suffix + targetParse.base;
 };
 
 const splitName = (name: string): [string, string] => {
