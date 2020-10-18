@@ -9,4 +9,4 @@ then
     exit 1
 fi
 
-find . | grep -e "ts$" -e "ll$" | entr -s .bin/test.sh
+find . | grep -e "ts$" -e "llld$" -e "llgd$" | entr -s .bin/test.sh
