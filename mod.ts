@@ -3,12 +3,14 @@ import * as PP from "https://raw.githubusercontent.com/littlelanguages/deno-lib-
 
 import {
   asDoc,
+  first,
+  translate,
+} from "https://raw.githubusercontent.com/littlelanguages/parspiler/0.0.5/mod.ts";
+import type {
   Definition,
   Expr,
-  first,
   Production,
-  translate,
-} from "https://raw.githubusercontent.com/littlelanguages/parspiler/0.0.4/mod.ts";
+} from "https://raw.githubusercontent.com/littlelanguages/parspiler/0.0.5/mod.ts";
 import {
   copyLibrary as copyScannerLibrary,
   writeScanner,
