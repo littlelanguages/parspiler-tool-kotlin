@@ -657,15 +657,6 @@ const fileDateTime = (name: string): number => {
   }
 };
 
-const splitName = (name: string): [string, string] => {
-  const lastIndexOfPeriod = name.lastIndexOf(".");
-
-  return (lastIndexOfPeriod === -1) ? ["", name] : [
-    name.substr(0, lastIndexOfPeriod),
-    name.substr(lastIndexOfPeriod + 1),
-  ];
-};
-
 type TokenSetCache = {
   counter: number;
   values: Array<[Set<string>, string]>;
